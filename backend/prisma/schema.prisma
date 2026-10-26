@@ -1,0 +1,76 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employee {
+  id          String       @id @default(cuid())
+  employeeId  String       @unique
+  name        String
+  pinHash     String
+  isActive    Boolean      @default(true)
+  status      String       @default("ACTIVE")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  attendances Attendance[]
+
+  @@map("employees")
+}
+
+model QrSession {
+  id          String       @id @default(cuid())
+  token       String       @unique
+  createdAt   DateTime     @default(now())
+  expiresAt   DateTime
+  isActive    Boolean      @default(true)
+
+  attendances Attendance[]
+
+  @@map("qr_sessions")
+}
+
+model Attendance {
+  id             String     @id @default(cuid())
+  employeeId     String
+  qrSessionId    String?
+  attendanceDate DateTime
+  entryTime      DateTime?
+  exitTime       DateTime?
+  totalMinutes   Int?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  employee       Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  qrSession      QrSession? @relation(fields: [qrSessionId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, attendanceDate])
+  @@index([attendanceDate])
+  @@index([employeeId])
+  @@map("attendance")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  date        DateTime @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@map("holidays")
+}
