@@ -1,5 +1,4 @@
-
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { RefreshCw, Clock, ShieldCheck } from "lucide-react";
 import API from "../services/api";
 
@@ -7,10 +6,10 @@ const QR_VALIDITY_SECONDS = 90;
 
 function QRDisplay() {
   const [qrCode, setQrCode] = useState("");
-  const [expiresAt, setExpiresAt] = useState(null);
-  const [seconds, setSeconds] = useState(0);
+  const [seconds, setSeconds] = useState(QR_VALIDITY_SECONDS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const targetTimeRef = useRef(null);
 
   const generateQR = useCallback(async () => {
     try {
@@ -18,10 +17,11 @@ function QRDisplay() {
       setError("");
 
       const response = await API.get("/qr/generate");
+      const validFor = response.data?.validFor || QR_VALIDITY_SECONDS;
 
       setQrCode(response.data.qrCode);
-      setExpiresAt(response.data.expiresAt);
-      setSeconds(response.data.validFor || QR_VALIDITY_SECONDS);
+      setSeconds(validFor);
+      targetTimeRef.current = Date.now() + validFor * 1000;
     } catch (err) {
       console.error("QR generation error:", err);
 
@@ -30,50 +30,34 @@ function QRDisplay() {
           "Failed to generate QR. Retrying..."
       );
       setQrCode("");
-      setExpiresAt(null);
+      targetTimeRef.current = null;
+      setSeconds(0);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Generate the first QR and refresh automatically.
+  // Initial load
   useEffect(() => {
-    let cancelled = false;
-    let refreshTimer;
-
-    const run = async () => {
-      await generateQR();
-
-      if (!cancelled) {
-        refreshTimer = setTimeout(
-          run,
-          QR_VALIDITY_SECONDS * 1000
-        );
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(refreshTimer);
-    };
+    generateQR();
   }, [generateQR]);
 
-  // Update countdown once per second.
+  // Countdown timer and auto-refresh
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!expiresAt) return;
+      if (!targetTimeRef.current) return;
 
-      const remaining = Math.ceil(
-        (new Date(expiresAt).getTime() - Date.now()) / 1000
-      );
+      const remaining = Math.max(0, Math.ceil((targetTimeRef.current - Date.now()) / 1000));
+      setSeconds(remaining);
 
-      setSeconds(Math.max(0, remaining));
+      if (remaining <= 0) {
+        targetTimeRef.current = null;
+        generateQR();
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [expiresAt]);
+  }, [generateQR]);
 
   return (
     <div className="qr-display-page">

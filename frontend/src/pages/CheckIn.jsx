@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 const API_URL =
-  "https://presents-defined-involves-drives.trycloudflare.com/api";
+  "https://anbu-iot.onrender.com/api";
 
 function CheckIn() {
   const params = new URLSearchParams(window.location.search);
