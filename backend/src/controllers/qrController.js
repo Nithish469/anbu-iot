@@ -1,9 +1,11 @@
+
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 
 const prisma = require("../config/database");
 
-const QR_VALIDITY_SECONDS = 90;
+// QR validity: 120 seconds
+const QR_VALIDITY_SECONDS = 120;
 
 // ========================================
 // GENERATE ROTATING QR
@@ -30,7 +32,16 @@ const generateQr = async (req, res) => {
       createdAt.getTime() + QR_VALIDITY_SECONDS * 1000
     );
 
-    // Save QR session
+    // Check frontend URL configuration
+    const frontendUrl = process.env.FRONTEND_URL;
+
+    if (!frontendUrl) {
+      return res.status(500).json({
+        message: "FRONTEND_URL is not configured",
+      });
+    }
+
+    // Save QR session in database
     const qrSession = await prisma.qrSession.create({
       data: {
         token,
@@ -40,35 +51,21 @@ const generateQr = async (req, res) => {
       },
     });
 
-    // ========================================
-    // URL STORED INSIDE QR
-    // ========================================
-
-    const frontendUrl = process.env.FRONTEND_URL;
-
-    if (!frontendUrl) {
-      return res.status(500).json({
-        message: "FRONTEND_URL is not configured",
-      });
-    }
+    // URL stored inside QR
+    const baseUrl = frontendUrl.replace(/\/+$/, "");
 
     const qrData =
-      `${frontendUrl}/check-in` +
+      `${baseUrl}/check-in` +
       `?sessionId=${encodeURIComponent(qrSession.id)}` +
       `&token=${encodeURIComponent(qrSession.token)}`;
 
     // Generate QR image
     const qrCode = await QRCode.toDataURL(qrData);
 
-    // ========================================
-    // RESPONSE
-    // ========================================
-
     return res.status(201).json({
       message: "QR generated successfully",
       qrCode,
       sessionId: qrSession.id,
-      token: qrSession.token, // Temporary: useful for Postman testing
       expiresAt: qrSession.expiresAt,
       validFor: QR_VALIDITY_SECONDS,
     });
@@ -91,9 +88,15 @@ const verifyQr = async (req, res) => {
     const { sessionId, token } = req.body;
 
     // Check required data
-    if (!sessionId || !token) {
+    if (
+      typeof sessionId !== "string" ||
+      typeof token !== "string" ||
+      !sessionId.trim() ||
+      !token.trim()
+    ) {
       return res.status(400).json({
         valid: false,
+        code: "MISSING_QR_DATA",
         message: "QR session information is required",
       });
     }
@@ -109,7 +112,8 @@ const verifyQr = async (req, res) => {
     if (!qrSession) {
       return res.status(404).json({
         valid: false,
-        message: "Invalid QR code",
+        code: "SESSION_NOT_FOUND",
+        message: "Invalid QR code: session not found",
       });
     }
 
@@ -117,6 +121,7 @@ const verifyQr = async (req, res) => {
     if (qrSession.token !== token) {
       return res.status(401).json({
         valid: false,
+        code: "TOKEN_MISMATCH",
         message: "Invalid QR token",
       });
     }
@@ -125,18 +130,24 @@ const verifyQr = async (req, res) => {
     if (!qrSession.isActive) {
       return res.status(400).json({
         valid: false,
-        message: "QR code has expired",
+        code: "SESSION_INACTIVE",
+        message: "QR code is inactive or has expired",
       });
     }
 
-    // Check expiration
+    // Check expiration using server/database session timestamp
     const now = new Date();
+    const expiresAt = new Date(qrSession.expiresAt);
 
-    if (now >= qrSession.expiresAt) {
+    if (
+      Number.isNaN(expiresAt.getTime()) ||
+      now.getTime() >= expiresAt.getTime()
+    ) {
       // Deactivate expired session
-      await prisma.qrSession.update({
+      await prisma.qrSession.updateMany({
         where: {
           id: qrSession.id,
+          isActive: true,
         },
         data: {
           isActive: false,
@@ -145,13 +156,15 @@ const verifyQr = async (req, res) => {
 
       return res.status(400).json({
         valid: false,
-        message: "QR code has expired",
+        code: "QR_EXPIRED",
+        message: "QR code has expired. Please scan a new QR code.",
       });
     }
 
     // QR is valid
-    const remainingSeconds = Math.ceil(
-      (qrSession.expiresAt.getTime() - now.getTime()) / 1000
+    const remainingSeconds = Math.max(
+      0,
+      Math.ceil((expiresAt.getTime() - now.getTime()) / 1000)
     );
 
     return res.status(200).json({
@@ -166,6 +179,7 @@ const verifyQr = async (req, res) => {
 
     return res.status(500).json({
       valid: false,
+      code: "VERIFICATION_ERROR",
       message: "Failed to verify QR",
       error: error.message,
     });
