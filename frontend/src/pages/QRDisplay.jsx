@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { RefreshCw, Clock, ShieldCheck } from "lucide-react";
 import API from "../services/api";
 
-const QR_VALIDITY_SECONDS = 90;
+const QR_VALIDITY_SECONDS = 120;
 
 function QRDisplay() {
   const [qrCode, setQrCode] = useState("");
@@ -112,7 +112,7 @@ function QRDisplay() {
           <div>
             <strong>Secure Attendance</strong>
             <span>
-              This QR code expires after 90 seconds and refreshes
+              This QR code expires after 120 seconds and refreshes
               automatically.
             </span>
           </div>
