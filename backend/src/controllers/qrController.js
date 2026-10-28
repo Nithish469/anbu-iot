@@ -13,26 +13,11 @@ const QR_VALIDITY_SECONDS = 120;
 
 const generateQr = async (req, res) => {
   try {
-    // Deactivate previous QR sessions
-    await prisma.qrSession.updateMany({
-      where: {
-        isActive: true,
-      },
-      data: {
-        isActive: false,
-      },
-    });
-
-    // Generate secure random token
-    const token = crypto.randomBytes(32).toString("hex");
-
-    const createdAt = new Date();
-
-    const expiresAt = new Date(
-      createdAt.getTime() + QR_VALIDITY_SECONDS * 1000
+    console.log(
+      "[QR DEBUG] generateQr called:",
+      new Date().toISOString()
     );
 
-    // Check frontend URL configuration
     const frontendUrl = process.env.FRONTEND_URL;
 
     if (!frontendUrl) {
@@ -41,7 +26,30 @@ const generateQr = async (req, res) => {
       });
     }
 
-    // Save QR session in database
+    // Log how many active sessions exist before deactivation
+    const activeBefore = await prisma.qrSession.count({
+      where: { isActive: true },
+    });
+
+    console.log(
+      "[QR DEBUG] Active sessions before generation:",
+      activeBefore
+    );
+
+    // Deactivate previous QR sessions
+    await prisma.qrSession.updateMany({
+      where: { isActive: true },
+      data: { isActive: false },
+    });
+
+    // Generate secure random token
+    const token = crypto.randomBytes(32).toString("hex");
+    const createdAt = new Date();
+    const expiresAt = new Date(
+      createdAt.getTime() + QR_VALIDITY_SECONDS * 1000
+    );
+
+    // Save QR session
     const qrSession = await prisma.qrSession.create({
       data: {
         token,
@@ -51,15 +59,22 @@ const generateQr = async (req, res) => {
       },
     });
 
-    // URL stored inside QR
-    const baseUrl = frontendUrl.replace(/\/+$/, "");
+    console.log("[QR DEBUG] New session created:", {
+      sessionId: qrSession.id,
+      createdAt: qrSession.createdAt,
+      expiresAt: qrSession.expiresAt,
+      isActive: qrSession.isActive,
+      validForSeconds: QR_VALIDITY_SECONDS,
+      serverTime: new Date().toISOString(),
+    });
 
+    // Build QR URL
+    const baseUrl = frontendUrl.replace(/\/+$/, "");
     const qrData =
       `${baseUrl}/check-in` +
       `?sessionId=${encodeURIComponent(qrSession.id)}` +
       `&token=${encodeURIComponent(qrSession.token)}`;
 
-    // Generate QR image
     const qrCode = await QRCode.toDataURL(qrData);
 
     return res.status(201).json({
@@ -70,7 +85,7 @@ const generateQr = async (req, res) => {
       validFor: QR_VALIDITY_SECONDS,
     });
   } catch (error) {
-    console.error("QR generation error:", error);
+    console.error("[QR DEBUG] QR generation error:", error);
 
     return res.status(500).json({
       message: "Failed to generate QR",
@@ -87,7 +102,6 @@ const verifyQr = async (req, res) => {
   try {
     const { sessionId, token } = req.body;
 
-    // Check required data
     if (
       typeof sessionId !== "string" ||
       typeof token !== "string" ||
@@ -101,15 +115,13 @@ const verifyQr = async (req, res) => {
       });
     }
 
-    // Find QR session
     const qrSession = await prisma.qrSession.findUnique({
-      where: {
-        id: sessionId,
-      },
+      where: { id: sessionId },
     });
 
-    // Session doesn't exist
     if (!qrSession) {
+      console.warn("[QR DEBUG] Session not found:", sessionId);
+
       return res.status(404).json({
         valid: false,
         code: "SESSION_NOT_FOUND",
@@ -117,8 +129,9 @@ const verifyQr = async (req, res) => {
       });
     }
 
-    // Check token
     if (qrSession.token !== token) {
+      console.warn("[QR DEBUG] Token mismatch for session:", sessionId);
+
       return res.status(401).json({
         valid: false,
         code: "TOKEN_MISMATCH",
@@ -126,8 +139,27 @@ const verifyQr = async (req, res) => {
       });
     }
 
-    // Check active status
+    const now = new Date();
+    const expiresAt = new Date(qrSession.expiresAt);
+
+    // Log session state without exposing the secret token
+    console.log("[QR DEBUG] Verification status:", {
+      sessionId: qrSession.id,
+      isActive: qrSession.isActive,
+      createdAt: qrSession.createdAt,
+      expiresAt: qrSession.expiresAt,
+      serverNow: now.toISOString(),
+      ageSeconds: Math.floor(
+        (now.getTime() - new Date(qrSession.createdAt).getTime()) / 1000
+      ),
+      remainingSeconds: Math.ceil(
+        (expiresAt.getTime() - now.getTime()) / 1000
+      ),
+    });
+
     if (!qrSession.isActive) {
+      console.warn("[QR DEBUG] Session is inactive:", sessionId);
+
       return res.status(400).json({
         valid: false,
         code: "SESSION_INACTIVE",
@@ -135,24 +167,19 @@ const verifyQr = async (req, res) => {
       });
     }
 
-    // Check expiration using server/database session timestamp
-    const now = new Date();
-    const expiresAt = new Date(qrSession.expiresAt);
-
     if (
       Number.isNaN(expiresAt.getTime()) ||
       now.getTime() >= expiresAt.getTime()
     ) {
-      // Deactivate expired session
       await prisma.qrSession.updateMany({
         where: {
           id: qrSession.id,
           isActive: true,
         },
-        data: {
-          isActive: false,
-        },
+        data: { isActive: false },
       });
+
+      console.warn("[QR DEBUG] Session expired:", sessionId);
 
       return res.status(400).json({
         valid: false,
@@ -161,10 +188,8 @@ const verifyQr = async (req, res) => {
       });
     }
 
-    // QR is valid
-    const remainingSeconds = Math.max(
-      0,
-      Math.ceil((expiresAt.getTime() - now.getTime()) / 1000)
+    const remainingSeconds = Math.ceil(
+      (expiresAt.getTime() - now.getTime()) / 1000
     );
 
     return res.status(200).json({
@@ -175,7 +200,7 @@ const verifyQr = async (req, res) => {
       remainingSeconds,
     });
   } catch (error) {
-    console.error("QR verification error:", error);
+    console.error("[QR DEBUG] QR verification error:", error);
 
     return res.status(500).json({
       valid: false,
