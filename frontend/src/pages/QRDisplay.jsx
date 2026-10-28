@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { RefreshCw, Clock, ShieldCheck } from "lucide-react";
 import API from "../services/api";
@@ -9,48 +10,85 @@ function QRDisplay() {
   const [seconds, setSeconds] = useState(QR_VALIDITY_SECONDS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const targetTimeRef = useRef(null);
+  const generatingRef = useRef(false);
+  const mountedRef = useRef(false);
 
   const generateQR = useCallback(async () => {
+    // Prevent overlapping requests in this component instance.
+    if (generatingRef.current) return;
+
+    generatingRef.current = true;
+
     try {
       setLoading(true);
       setError("");
 
+      console.log("[QR DEBUG] Requesting a new QR");
+
       const response = await API.get("/qr/generate");
-      const validFor = response.data?.validFor || QR_VALIDITY_SECONDS;
+
+      if (!response.data?.qrCode) {
+        throw new Error("QR code was not returned by the server.");
+      }
+
+      const validFor =
+        Number(response.data?.validFor) || QR_VALIDITY_SECONDS;
 
       setQrCode(response.data.qrCode);
       setSeconds(validFor);
+
       targetTimeRef.current = Date.now() + validFor * 1000;
+
+      console.log("[QR DEBUG] QR received", {
+        validFor,
+        receivedAt: new Date().toISOString(),
+      });
     } catch (err) {
       console.error("QR generation error:", err);
 
       setError(
         err.response?.data?.message ||
-          "Failed to generate QR. Retrying..."
+          err.message ||
+          "Failed to generate QR. Please retry."
       );
+
       setQrCode("");
       targetTimeRef.current = null;
       setSeconds(0);
     } finally {
+      generatingRef.current = false;
       setLoading(false);
     }
   }, []);
 
-  // Initial load
+  // Generate the initial QR.
   useEffect(() => {
+    mountedRef.current = true;
+
     generateQR();
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [generateQR]);
 
-  // Countdown timer and auto-refresh
+  // Countdown and refresh only when the current QR reaches expiry.
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!targetTimeRef.current) return;
+      const targetTime = targetTimeRef.current;
 
-      const remaining = Math.max(0, Math.ceil((targetTimeRef.current - Date.now()) / 1000));
+      if (!targetTime || generatingRef.current) return;
+
+      const remaining = Math.max(
+        0,
+        Math.ceil((targetTime - Date.now()) / 1000)
+      );
+
       setSeconds(remaining);
 
-      if (remaining <= 0) {
+      if (remaining === 0) {
         targetTimeRef.current = null;
         generateQR();
       }
@@ -59,11 +97,17 @@ function QRDisplay() {
     return () => clearInterval(timer);
   }, [generateQR]);
 
+  const handleRetry = () => {
+    targetTimeRef.current = null;
+    generateQR();
+  };
+
   return (
     <div className="qr-display-page">
       <div className="qr-display-card">
         <div className="qr-display-header">
           <div className="qr-logo">A</div>
+
           <div>
             <h1>Anbu IoT</h1>
             <p>Attendance System</p>
@@ -86,7 +130,7 @@ function QRDisplay() {
           ) : error ? (
             <div className="qr-error">
               <p>{error}</p>
-              <button onClick={generateQR}>
+              <button onClick={handleRetry} disabled={loading}>
                 Retry Now
               </button>
             </div>
