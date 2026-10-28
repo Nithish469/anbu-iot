@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 // ========================================
 // VERIFY QR SESSION
 // ========================================
+
 const verifyQrSession = async (sessionId, token) => {
   if (!sessionId || !token) {
     return {
@@ -18,29 +19,52 @@ const verifyQrSession = async (sessionId, token) => {
   });
 
   if (!qrSession) {
-    return { valid: false, message: "Invalid QR code" };
+    return {
+      valid: false,
+      message: "Invalid QR code: session not found",
+    };
   }
 
   if (qrSession.token !== token) {
-    return { valid: false, message: "Invalid QR token" };
+    return {
+      valid: false,
+      message: "Invalid QR token",
+    };
   }
 
   if (!qrSession.isActive) {
-    return { valid: false, message: "QR code has expired" };
+    return {
+      valid: false,
+      message:
+        "QR session is inactive. Generate a new QR code and scan it.",
+    };
   }
 
-  const now = new Date();
+  const now = Date.now();
+  const expiresAt = new Date(qrSession.expiresAt).getTime();
 
-  if (now >= qrSession.expiresAt) {
-    await prisma.qrSession.update({
-      where: { id: qrSession.id },
-      data: { isActive: false },
+  if (!Number.isFinite(expiresAt) || now >= expiresAt) {
+    await prisma.qrSession.updateMany({
+      where: {
+        id: qrSession.id,
+        isActive: true,
+      },
+      data: {
+        isActive: false,
+      },
     });
 
-    return { valid: false, message: "QR code has expired" };
+    return {
+      valid: false,
+      message: "QR code has expired. Please scan a new QR code.",
+    };
   }
 
-  return { valid: true, qrSession };
+  return {
+    valid: true,
+    qrSession,
+    remainingSeconds: Math.ceil((expiresAt - now) / 1000),
+  };
 };
 
 // ========================================
