@@ -7,13 +7,12 @@ import {
   Clock,
   CheckCircle,
   FileDown,
+  CalendarDays,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import API from "../services/api";
 
-// Convert dates consistently to YYYY-MM-DD.
-// Holiday dates are stored at UTC midnight.
 const dateKey = (value) => {
   if (!value) return "";
 
@@ -25,7 +24,6 @@ const dateKey = (value) => {
   }
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "";
 
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -43,6 +41,22 @@ const dateKey = (value) => {
   return `${values.year}-${values.month}-${values.day}`;
 };
 
+const getCurrentMonthKey = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+
+  const values = {};
+  parts.forEach((part) => {
+    if (part.type !== "literal") values[part.type] = part.value;
+  });
+
+  return `${values.year}-${values.month}`;
+};
+
+const getTodayKey = () => dateKey(new Date());
 const monthKey = (value) => value.slice(0, 7);
 
 const formatDate = (value) => {
@@ -69,7 +83,6 @@ const formatTime = (value) => {
 
 const formatMinutes = (value) => {
   const minutes = Math.max(0, Number(value) || 0);
-
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 };
 
@@ -79,15 +92,7 @@ function Reports() {
   const [holidays, setHolidays] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [search, setSearch] = useState("");
-
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-
-    return `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}`;
-  });
-
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthKey);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -129,7 +134,6 @@ function Reports() {
       );
     } catch (error) {
       console.error("Reports error:", error);
-
       alert(
         "Reports load aagala. Admin login, API routes, and server check pannunga."
       );
@@ -142,8 +146,6 @@ function Reports() {
     fetchData();
   }, []);
 
-  // Match attendance records to employees using database ID
-  // or the employee's business ID.
   const employeeForRecord = (record) => {
     const nestedEmployee = record.employee;
 
@@ -194,11 +196,14 @@ function Reports() {
   const getMinutes = (record) => {
     const value = Number(record.totalMinutes);
 
-    if (Number.isFinite(value)) {
+    if (
+      record.totalMinutes !== null &&
+      record.totalMinutes !== undefined &&
+      Number.isFinite(value)
+    ) {
       return Math.max(0, value);
     }
 
-    // Fallback if totalMinutes was not saved by the backend.
     if (record.entryTime && record.exitTime) {
       const start = new Date(record.entryTime).getTime();
       const end = new Date(record.exitTime).getTime();
@@ -265,12 +270,7 @@ function Reports() {
     );
 
   const getMonth = () => {
-    const chosen =
-      selectedMonth ||
-      `${new Date().getFullYear()}-${String(
-        new Date().getMonth() + 1
-      ).padStart(2, "0")}`;
-
+    const chosen = selectedMonth || getCurrentMonthKey();
     const [year, month] = chosen.split("-").map(Number);
 
     return {
@@ -281,39 +281,66 @@ function Reports() {
     };
   };
 
+  const getSelectedMonthHolidayCount = () => {
+    const chosen = selectedMonth || getCurrentMonthKey();
+
+    return new Set(
+      holidays
+        .map((holiday) => dateKey(holiday.date))
+        .filter(
+          (date) => date && date.startsWith(`${chosen}-`)
+        )
+    ).size;
+  };
+
   const buildSummary = (employeeList) => {
-    const { year, month, totalDays } = getMonth();
+    const { year, month, totalDays, chosen } = getMonth();
+    const todayKey = getTodayKey();
 
-    const chosenMonth = `${year}-${String(month).padStart(
-      2,
-      "0"
-    )}`;
+    const firstDayKey = `${chosen}-01`;
+    const lastDayKey =
+      `${chosen}-${String(totalDays).padStart(2, "0")}`;
 
-    // A Set ensures that a Sunday which is also a holiday
-    // is counted only once.
+    let elapsedDays = 0;
+
+    if (todayKey > lastDayKey) {
+      // Past month: all dates in the month have elapsed.
+      elapsedDays = totalDays;
+    } else if (todayKey >= firstDayKey) {
+      // Current month: count only dates through today.
+      elapsedDays = Number(todayKey.slice(8, 10));
+    }
+    // Future month: elapsedDays remains zero.
+
     const holidayDates = new Set(
-      holidays.map((holiday) => dateKey(holiday.date))
+      holidays
+        .map((holiday) => dateKey(holiday.date))
+        .filter(
+          (date) => date && date.startsWith(`${chosen}-`)
+        )
     );
 
     const nonWorkingDates = new Set();
 
-    for (let day = 1; day <= totalDays; day++) {
-      const key = `${chosenMonth}-${String(day).padStart(
-        2,
-        "0"
-      )}`;
+    for (let day = 1; day <= elapsedDays; day++) {
+      const key =
+        `${chosen}-${String(day).padStart(2, "0")}`;
 
-      // UTC weekday calculation avoids timezone shifts.
-      const weekday = new Date(`${key}T00:00:00Z`).getUTCDay();
+      const weekday =
+        new Date(`${key}T00:00:00Z`).getUTCDay();
 
-      // Sunday = 0.
       if (weekday === 0 || holidayDates.has(key)) {
         nonWorkingDates.add(key);
       }
     }
 
+    // Includes Sundays and configured company holidays, without
+    // double-counting a date that is both Sunday and a holiday.
     const companyLeave = nonWorkingDates.size;
-    const workingDays = totalDays - companyLeave;
+    const workingDays = Math.max(
+      0,
+      elapsedDays - companyLeave
+    );
 
     return employeeList.map((employee) => {
       const matchesEmployee = (record) => {
@@ -334,11 +361,11 @@ function Reports() {
 
         return (
           matchesEmployee(record) &&
-          monthKey(recordDate) === chosenMonth
+          monthKey(recordDate) === chosen &&
+          recordDate <= todayKey
         );
       });
 
-      // Count unique working dates with a check-in.
       const presentDates = new Set();
 
       employeeAttendance.forEach((record) => {
@@ -362,7 +389,6 @@ function Reports() {
         workingDays - present
       );
 
-      // Sum recorded work time for this employee in the month.
       const totalWorkingMinutes = employeeAttendance.reduce(
         (sum, record) => sum + getMinutes(record),
         0
@@ -448,7 +474,6 @@ function Reports() {
     );
 
     doc.setFontSize(9);
-
     doc.text(
       `Month: ${chosen} | Weekly holiday: Sunday`,
       14,
@@ -456,15 +481,23 @@ function Reports() {
     );
 
     doc.text(
-      "Sundays and company holidays are non-working days.",
+      `Company holidays this month: ${getSelectedMonthHolidayCount()}`,
       14,
       37
     );
 
     doc.text(
-      `Generated: ${new Date().toLocaleString("en-IN")}`,
+      "Counts include only elapsed dates through today for the current month.",
       14,
       42
+    );
+
+    doc.text(
+      `Generated: ${new Date().toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      })}`,
+      14,
+      47
     );
 
     const reportTotalMinutes = rows.reduce(
@@ -473,18 +506,16 @@ function Reports() {
     );
 
     doc.setFontSize(10);
-
     doc.text(
       `Total Working Time (all listed employees): ${formatMinutes(
         reportTotalMinutes
       )}`,
       14,
-      48
+      53
     );
 
     autoTable(doc, {
-      startY: 54,
-
+      startY: 59,
       head: [[
         "Name",
         "Employee ID",
@@ -497,7 +528,6 @@ function Reports() {
         "Attendance %",
         "Status",
       ]],
-
       body: rows.map((row) => [
         row.name,
         row.employeeId,
@@ -510,35 +540,27 @@ function Reports() {
         `${row.percent.toFixed(1)}%`,
         row.status,
       ]),
-
       theme: "grid",
-
       styles: {
         fontSize: 8,
         cellPadding: 3,
         overflow: "linebreak",
       },
-
       headStyles: {
         fillColor: [15, 139, 129],
         textColor: 255,
       },
-
       alternateRowStyles: {
         fillColor: [245, 248, 252],
       },
-
       margin: {
         left: 14,
         right: 14,
         bottom: 16,
       },
-
       didDrawPage: () => {
         const page = doc.internal.getNumberOfPages();
-
         doc.setFontSize(8);
-
         doc.text(
           `Anbu IoT Attendance | Page ${page}`,
           14,
@@ -562,7 +584,7 @@ function Reports() {
   const clearFilters = () => {
     setSelectedEmployee("");
     setSearch("");
-    setSelectedMonth("");
+    setSelectedMonth(getCurrentMonthKey());
   };
 
   const completedRecords = filteredAttendance.filter(
@@ -600,7 +622,6 @@ function Reports() {
       <div className="card report-filters">
         <div className="filter-group">
           <label>Employee</label>
-
           <select
             value={selectedEmployee}
             onChange={(event) =>
@@ -608,7 +629,6 @@ function Reports() {
             }
           >
             <option value="">All Employees</option>
-
             {employees.map((employee) => (
               <option
                 key={employee.id}
@@ -622,7 +642,6 @@ function Reports() {
 
         <div className="filter-group">
           <label>Month</label>
-
           <input
             type="month"
             value={selectedMonth}
@@ -634,10 +653,8 @@ function Reports() {
 
         <div className="filter-group search-filter">
           <label>Search</label>
-
           <div className="report-search">
             <Search size={17} />
-
             <input
               type="text"
               placeholder="Search employee..."
@@ -718,6 +735,16 @@ function Reports() {
             <strong>{formatMinutes(averageMinutes)}</strong>
           </div>
         </div>
+
+        <div className="stat-card">
+          <div className="stat-icon red">
+            <CalendarDays size={20} />
+          </div>
+          <div>
+            <span>Company Holidays</span>
+            <strong>{getSelectedMonthHolidayCount()}</strong>
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -726,7 +753,6 @@ function Reports() {
             <h2>Attendance Report</h2>
             <p>Detailed employee attendance records</p>
           </div>
-
           <div>
             <strong>{filteredAttendance.length}</strong> records
           </div>
@@ -774,7 +800,6 @@ function Reports() {
                                 .charAt(0)
                                 .toUpperCase()}
                             </div>
-
                             <span>{employeeName(record)}</span>
                           </div>
                         </td>
