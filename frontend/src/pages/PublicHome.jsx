@@ -1,33 +1,63 @@
 
 import { useState } from "react";
+
 import {
   QrCode,
   ShieldCheck,
   UserRound,
-  UsersRound,
   Zap,
-  RefreshCw,
+  BarChart3,
   Info,
+  RefreshCw,
+  CalendarDays,
+  Menu,
+  X,
 } from "lucide-react";
 
 import PublicDashboard from "./PublicDashboard";
-import QRDisplay from "./QRDisplay";
-import "./PublicHome.css";
+import QRDisplay from "../pages/QRDisplay";
+
+import "../pages/PublicHome.css";
 import anbuLogo from "../assets/anbu-aiot-logo.png";
 
 function PublicHome({ onAdminLogin, onEmployeeLogin }) {
   const [showDashboard, setShowDashboard] = useState(true);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const currentDate = new Intl.DateTimeFormat("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date());
+
+  // Refresh dashboard
+  const handleDashboardRefresh = () => {
+    if (isRefreshing) return;
+
+    window.dispatchEvent(
+      new Event("anbu-public-refresh")
+    );
+  };
+
+  const handleAdminClick = () => {
+    setMobileMenu(false);
+    onAdminLogin?.();
+  };
+
+  const handleEmployeeClick = () => {
+    setMobileMenu(false);
+    onEmployeeLogin?.();
+  };
 
   return (
     <div className="public-home">
-      {/* Navigation */}
+
+      {/* NAVBAR */}
       <header className="public-navbar">
-        <a
-          className="public-brand"
-          href="/"
-          aria-label="Anbu IoT home"
-        >
-          {/* Logo in the top-left navbar */}
+
+        <a className="public-brand" href="/">
           <span className="public-brand-icon">
             <img src={anbuLogo} alt="Anbu IoT Logo" />
           </span>
@@ -38,160 +68,255 @@ function PublicHome({ onAdminLogin, onEmployeeLogin }) {
           </span>
         </a>
 
-        <div className="public-nav-actions">
+        <div
+          className={`public-nav-actions ${
+            mobileMenu ? "open" : ""
+          }`}
+        >
           <button
             type="button"
             className="public-login-btn public-admin-btn"
-            onClick={onAdminLogin}
+            onClick={handleAdminClick}
           >
-            <ShieldCheck size={19} />
+            <ShieldCheck size={18} />
             Admin Login
           </button>
 
           <button
             type="button"
             className="public-login-btn public-employee-btn"
-            onClick={onEmployeeLogin}
+            onClick={handleEmployeeClick}
           >
-            <UserRound size={19} />
+            <UserRound size={18} />
             Employee Login
           </button>
         </div>
+
+        <button
+          type="button"
+          className="public-mobile-menu"
+          onClick={() => setMobileMenu((value) => !value)}
+          aria-label="Toggle navigation"
+          aria-expanded={mobileMenu}
+        >
+          {mobileMenu ? <X size={22} /> : <Menu size={22} />}
+        </button>
+
       </header>
 
       <main className="public-main">
-        {/* Hero section */}
-        <section className="public-hero">
-          <div className="public-hero-content">
-            {/* Main logo above the heading */}
-            <div className="hero-logo">
-              <img
-                src={anbuLogo}
-                alt="Anbu IoT Logo"
-              />
-            </div>
 
-            <span className="public-eyebrow">
-              <span className="public-live-dot" />
-              SMART ATTENDANCE MANAGEMENT
-            </span>
+        {/* MAIN TWO-COLUMN LAYOUT */}
+        <section className="anbu-main-layout">
 
-            <h1>
-              Attendance made
-              <span>simple and secure.</span>
-            </h1>
+          {/* LEFT COLUMN */}
+          <div className="anbu-left-column">
 
-            <p className="public-hero-description">
-              Use the latest attendance QR code to check in or check out.
-              Fast, simple and secure attendance tracking for your workplace.
-            </p>
+            {/* HERO SECTION */}
+            <section className="anbu-hero-intro">
 
-            <div className="public-hero-features">
-              <div className="public-feature">
-                <span className="public-feature-icon feature-teal">
-                  <ShieldCheck size={29} />
+              <div className="anbu-hero-text">
+
+                <span className="public-eyebrow">
+                  <span className="public-live-dot" />
+                  SMART ATTENDANCE MANAGEMENT
                 </span>
-                <strong>
-                  Secure QR
+
+                <h1>
+                  Attendance Made
                   <br />
-                  attendance
-                </strong>
+                  Simple, <span>Secure & Smart.</span>
+                </h1>
+
+                <p className="public-hero-description">
+                  A QR code-based employee attendance system
+                  with real-time tracking, automated reporting
+                  and easy management.
+                </p>
+
+                {/* FEATURES */}
+                <div className="anbu-hero-highlights">
+
+                  <div className="anbu-highlight">
+                    <span className="highlight-icon secure">
+                      <ShieldCheck size={22} />
+                    </span>
+
+                    <div>
+                      <strong>Secure & Reliable</strong>
+                      <small>OTP / Token Based Access</small>
+                    </div>
+                  </div>
+
+                  <div className="anbu-highlight">
+                    <span className="highlight-icon realtime">
+                      <Zap size={22} />
+                    </span>
+
+                    <div>
+                      <strong>Real-time Tracking</strong>
+                      <small>Live attendance updates</small>
+                    </div>
+                  </div>
+
+                  <div className="anbu-highlight">
+                    <span className="highlight-icon reports">
+                      <BarChart3 size={22} />
+                    </span>
+
+                    <div>
+                      <strong>Automated Reports</strong>
+                      <small>Download ready reports</small>
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
-              <div className="public-feature">
-                <span className="public-feature-icon feature-blue">
-                  <Zap size={29} />
-                </span>
-                <strong>
-                  Quick
-                  <br />
-                  check-in
-                </strong>
+              {/* HERO ILLUSTRATION */}
+              <div className="anbu-hero-visual">
+                <div className="anbu-visual-circle">
+
+                  <BarChart3 size={90} strokeWidth={1.5} />
+
+                  <span className="anbu-visual-qr">
+                    <QrCode size={35} />
+                  </span>
+
+                </div>
               </div>
 
-              <div className="public-feature">
-                <span className="public-feature-icon feature-purple">
-                  <UsersRound size={29} />
-                </span>
-                <strong>
-                  Easy and
-                  <br />
-                  reliable
-                </strong>
+            </section>
+
+            {/* ATTENDANCE DASHBOARD */}
+            <section className="anbu-dashboard-card">
+
+              <div className="anbu-dashboard-heading">
+
+                <div>
+                  <span className="public-section-eyebrow">
+                    LIVE OVERVIEW
+                  </span>
+
+                  <h2>Attendance Dashboard</h2>
+
+                  <p>
+                    Today's attendance summary at a glance.
+                  </p>
+                </div>
+
+                <div className="anbu-dashboard-actions">
+
+                  <span className="anbu-dashboard-date">
+                    <CalendarDays size={16} />
+                    {currentDate}
+                  </span>
+
+                  {/* REFRESH BUTTON */}
+                  <button
+                    type="button"
+                    className={`anbu-refresh-btn ${
+                      isRefreshing ? "is-refreshing" : ""
+                    }`}
+                    onClick={handleDashboardRefresh}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCw
+                      size={16}
+                      className="anbu-refresh-icon"
+                    />
+
+                    <span>
+                      {isRefreshing ? "Refreshing..." : "Refresh"}
+                    </span>
+                  </button>
+
+                </div>
+
               </div>
-            </div>
+
+              {showDashboard && (
+                <div className="anbu-dashboard-content">
+                  <PublicDashboard
+                    onLoadingChange={setIsRefreshing}
+                  />
+                </div>
+              )}
+
+              {/* DASHBOARD FOOTER */}
+              <div className="anbu-dashboard-footer">
+
+                <div className="public-privacy-note">
+                  <Info size={19} />
+
+                  <span>
+                    This page displays summary counts only.
+                    Individual employee attendance details are private.
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  className="anbu-dashboard-toggle"
+                  onClick={() =>
+                    setShowDashboard((value) => !value)
+                  }
+                >
+                  {showDashboard ? "Hide Summary" : "Show Summary"}
+                </button>
+
+              </div>
+
+            </section>
+
           </div>
 
-          {/* QR section */}
-          <aside className="public-qr-panel">
-            <div className="public-qr-panel-heading">
+          {/* RIGHT COLUMN - QR CODE */}
+          <aside className="anbu-qr-card">
+
+            <div className="anbu-qr-heading">
+
               <span className="public-qr-icon">
-                <QrCode size={27} />
+                <QrCode size={26} />
               </span>
 
               <div>
                 <h2>Scan to Mark Attendance</h2>
-                <p>Use your phone camera to scan the QR code</p>
+
+                <p>
+                  Use your phone camera to scan the QR code
+                </p>
               </div>
+
             </div>
 
-            <div className="public-qr-display">
+            <div className="anbu-qr-content">
               <QRDisplay />
             </div>
+
           </aside>
+
         </section>
 
-        {/* Public dashboard */}
-        <section className="public-dashboard-section">
-          <div className="public-section-heading">
-            <div>
-              <span className="public-section-eyebrow">
-                LIVE OVERVIEW
-              </span>
-
-              <h2>Attendance Dashboard</h2>
-
-              <p>Today's attendance summary at a glance.</p>
-            </div>
-
-            <button
-              type="button"
-              className="public-summary-toggle"
-              onClick={() =>
-                setShowDashboard((value) => !value)
-              }
-            >
-              <RefreshCw size={19} />
-              {showDashboard ? "Hide Summary" : "Show Summary"}
-            </button>
-          </div>
-
-          {showDashboard && (
-            <div className="public-dashboard-content">
-              <PublicDashboard />
-            </div>
-          )}
-
-          <div className="public-privacy-note">
-            <Info size={21} />
-            <span>
-              This page displays summary counts only. Individual employee
-              attendance details are private.
-            </span>
-          </div>
-        </section>
-
-        {/* Footer */}
+        {/* FOOTER */}
         <footer className="public-footer">
+
           <div className="public-footer-brand">
-            <span className="public-footer-icon">A</span>
+
+            <span className="public-footer-icon">
+              <img src={anbuLogo} alt="Anbu IoT" />
+            </span>
+
             <strong>Anbu IoT Attendance</strong>
+
           </div>
 
           <p>
             Smart attendance. Simple management. Secure access.
           </p>
+
         </footer>
+
       </main>
     </div>
   );

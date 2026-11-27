@@ -6,11 +6,10 @@ import {
   Clock,
   UserX,
   RefreshCw,
-  Info,
 } from "lucide-react";
 import API from "../services/api";
 
-function PublicDashboard() {
+function PublicDashboard({ onLoadingChange }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -18,23 +17,41 @@ function PublicDashboard() {
   const fetchSummary = async () => {
     try {
       setLoading(true);
+      onLoadingChange?.(true);
       setError("");
 
       const response = await API.get("/attendance/public-summary");
 
-console.log("Public summary API response:", response.data);
+      console.log("Public summary API response:", response.data);
 
-setSummary(response.data.summary);
+      setSummary(response.data.summary);
     } catch (err) {
       console.error("Public dashboard error:", err);
       setError("Dashboard summary load aagala. Please refresh.");
     } finally {
       setLoading(false);
+      onLoadingChange?.(false);
     }
   };
 
   useEffect(() => {
     fetchSummary();
+
+    const handlePublicRefresh = () => {
+      fetchSummary();
+    };
+
+    window.addEventListener(
+      "anbu-public-refresh",
+      handlePublicRefresh
+    );
+
+    return () => {
+      window.removeEventListener(
+        "anbu-public-refresh",
+        handlePublicRefresh
+      );
+    };
   }, []);
 
   const cards = [
@@ -71,11 +88,9 @@ setSummary(response.data.summary);
   return (
     <section className="public-dashboard">
       <header className="public-dashboard-header">
-      
-<br></br>
-         
-         
-       <button
+        <br />
+
+        <button
           type="button"
           className="refresh-btn"
           onClick={fetchSummary}
@@ -125,8 +140,6 @@ setSummary(response.data.summary);
           );
         })}
       </div>
-
-    
     </section>
   );
 }

@@ -1,10 +1,25 @@
 
 import { useState } from "react";
-import API from "../services/api";
+import {
+  UserRound,
+  LockKeyhole,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  ArrowRight,
+  ArrowLeft,
+  Users,
+  CalendarDays,
+  ChartNoAxesColumn,
+} from "lucide-react";
 
-function AdminLogin({ onLogin }) {
+import API from "../services/api";
+import "./AdminLogin.css";
+import anbuLogo from "../assets/anbu-aiot-logo.png";
+function AdminLogin({ onLogin, onBack }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,69 +52,166 @@ function AdminLogin({ onLogin }) {
   };
 
   return (
-    <div style={styles.page}>
-      <form onSubmit={handleSubmit} style={styles.card}>
-        <h1>Admin Login</h1>
-        <p>Sign in to manage employee attendance</p>
+    <div className="admin-login-page">
+      <div className="admin-login-container">
 
-        <label>Username</label>
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-          required
-        />
+        {/* LEFT BRAND PANEL */}
+        <section className="admin-brand-panel">
+          <div className="admin-brand-content">
 
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
+            <div className="admin-logo-wrapper">
+             <img
+  src={anbuLogo}
+  alt="Anbu IoT Logo"
+  className="admin-brand-logo"
+/>
+            </div>
 
-        {error && <p style={styles.error}>{error}</p>}
+            <h1>ANBU IoT</h1>
+            <p className="admin-brand-subtitle">
+              Smart Attendance Management
+            </p>
 
-        <button type="submit" disabled={loading} style={styles.button}>
-          {loading ? "Signing in..." : "Login"}
-        </button>
-      </form>
+            <div className="admin-illustration">
+              <div className="admin-illustration-box">
+                <CalendarDays size={76} strokeWidth={1.5} />
+                <span className="admin-illustration-check">
+                  <ShieldCheck size={27} />
+                </span>
+              </div>
+            </div>
+
+            <h2>Track. Manage. Report.</h2>
+
+            <p className="admin-brand-description">
+              A smarter way to manage employee attendance,
+              monitor work hours and generate reports.
+            </p>
+
+            <div className="admin-feature-list">
+              <div>
+                <span><Users size={25} /></span>
+                <small>Employees</small>
+              </div>
+
+              <div>
+                <span><CalendarDays size={25} /></span>
+                <small>Attendance</small>
+              </div>
+
+              <div>
+                <span><ChartNoAxesColumn size={25} /></span>
+                <small>Reports</small>
+              </div>
+            </div>
+
+            <p className="admin-brand-footer">
+              SMARTER ATTENDANCE, BETTER MANAGEMENT
+            </p>
+          </div>
+        </section>
+
+        {/* RIGHT LOGIN PANEL */}
+        <section className="admin-form-panel">
+          <form className="admin-login-form" onSubmit={handleSubmit}>
+
+            <div className="admin-login-badge">
+              <ShieldCheck size={17} />
+              <span>Admin Login</span>
+            </div>
+
+            <h2>Welcome Back</h2>
+
+            <p className="admin-login-description">
+              Sign in to access the Anbu IoT admin portal
+            </p>
+
+            <div className="admin-input-group">
+              <label>Username</label>
+
+              <div className="admin-input-wrapper">
+                <UserRound size={19} />
+                <input
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="admin-input-group">
+              <label>Password</label>
+
+              <div className="admin-input-wrapper">
+                <LockKeyhole size={19} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+
+                <button
+                  type="button"
+                  className="admin-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="admin-error-message">
+                {error}
+              </div>
+            )}
+
+            <div className="admin-secure-text">
+              <ShieldCheck size={15} />
+              <span>Secure Administrator Authentication</span>
+            </div>
+
+            <button
+              type="submit"
+              className="admin-submit-button"
+              disabled={loading}
+            >
+              {loading ? "Signing in..." : "Login to Admin"}
+              {!loading && <ArrowRight size={19} />}
+            </button>
+
+            <div className="admin-divider">
+              <span></span>
+              <small>or</small>
+              <span></span>
+            </div>
+
+            <button
+              type="button"
+              className="admin-back-button"
+              onClick={onBack}
+            >
+              <ArrowLeft size={17} />
+              Back to Home
+            </button>
+
+            <p className="admin-copyright">
+              © 2026 Anbu IoT. All rights reserved.
+            </p>
+
+          </form>
+        </section>
+
+      </div>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#f3f6fb",
-    padding: 20,
-    fontFamily: "Arial, sans-serif",
-  },
-  card: {
-    width: "100%",
-    maxWidth: 400,
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    padding: 30,
-    borderRadius: 16,
-    background: "#fff",
-    boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
-  },
-  error: { color: "#c62828" },
-  button: {
-    marginTop: 10,
-    padding: 12,
-    border: 0,
-    borderRadius: 8,
-    background: "#2563eb",
-    color: "#fff",
-    cursor: "pointer",
-  },
-};
 
 export default AdminLogin;

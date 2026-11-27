@@ -19,6 +19,10 @@ import Holidays from "./pages/Holidays";
 
 import "./App.css";
 
+// ==========================================
+// ADMIN DASHBOARD
+// ==========================================
+
 function AdminApp({ onLogout }) {
   const [page, setPage] = useState("dashboard");
 
@@ -26,20 +30,28 @@ function AdminApp({ onLogout }) {
     switch (page) {
       case "dashboard":
         return <Dashboard />;
+
       case "employees":
         return <Employees />;
+
       case "attendance":
         return <Attendance />;
+
       case "holidays":
         return <Holidays />;
+
       case "reports":
         return <Reports />;
+
       case "settings":
         return <Settings />;
+
       case "employee-scan":
         return <EmployeeScan />;
+
       case "employee-attendance":
         return <EmployeeAttendance />;
+
       default:
         return <Dashboard />;
     }
@@ -52,16 +64,26 @@ function AdminApp({ onLogout }) {
         setPage={setPage}
         onLogout={onLogout}
       />
-      <main className="main">{renderPage()}</main>
+
+      <main className="main">
+        {renderPage()}
+      </main>
     </div>
   );
 }
 
-// Determine the page from the current URL.
-function getInitialView(path) {
-  if (path === "/check-in") return "check-in";
+// ==========================================
+// INITIAL ROUTE HANDLING
+// ==========================================
 
-  if (path === "/employee/login") return "employee-login";
+function getInitialView(path) {
+  if (path === "/check-in") {
+    return "check-in";
+  }
+
+  if (path === "/employee/login") {
+    return "employee-login";
+  }
 
   if (path === "/employee/attendance") {
     return sessionStorage.getItem("employeeToken")
@@ -69,7 +91,9 @@ function getInitialView(path) {
       : "employee-login";
   }
 
-  if (path === "/admin/login") return "admin-login";
+  if (path === "/admin/login") {
+    return "admin-login";
+  }
 
   if (path === "/admin") {
     return sessionStorage.getItem("adminToken")
@@ -77,12 +101,20 @@ function getInitialView(path) {
       : "admin-login";
   }
 
-  if (sessionStorage.getItem("adminToken")) return "admin";
+  if (sessionStorage.getItem("adminToken")) {
+    return "admin";
+  }
 
-  if (sessionStorage.getItem("employeeToken")) return "employee";
+  if (sessionStorage.getItem("employeeToken")) {
+    return "employee";
+  }
 
   return "home";
 }
+
+// ==========================================
+// MAIN APP
+// ==========================================
 
 function App() {
   const [view, setView] = useState(() =>
@@ -99,7 +131,10 @@ function App() {
     }
   });
 
-  // Update browser URL and application view together.
+  // ========================================
+  // NAVIGATION FUNCTION
+  // ========================================
+
   const navigateTo = (path, nextView, replace = false) => {
     if (window.location.pathname !== path) {
       if (replace) {
@@ -112,7 +147,10 @@ function App() {
     setView(nextView);
   };
 
-  // Support browser Back and Forward buttons.
+  // ========================================
+  // BROWSER BACK / FORWARD
+  // ========================================
+
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
@@ -129,15 +167,33 @@ function App() {
         );
       }
 
+      if (
+        nextView === "admin-login" &&
+        path === "/admin"
+      ) {
+        window.history.replaceState(
+          {},
+          "",
+          "/admin/login"
+        );
+      }
+
       setView(nextView);
     };
 
     window.addEventListener("popstate", handlePopState);
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener(
+        "popstate",
+        handlePopState
+      );
     };
   }, []);
+
+  // ========================================
+  // ADMIN LOGOUT
+  // ========================================
 
   const handleAdminLogout = () => {
     sessionStorage.removeItem("adminToken");
@@ -146,11 +202,30 @@ function App() {
     navigateTo("/", "home");
   };
 
+  // ========================================
+  // ADMIN LOGIN SUCCESS
+  // ========================================
+
+  const handleAdminLogin = () => {
+    navigateTo("/admin", "admin");
+  };
+
+  // ========================================
+  // EMPLOYEE LOGIN SUCCESS
+  // ========================================
+
   const handleEmployeeLogin = (employeeInfo) => {
     setEmployee(employeeInfo);
 
-    navigateTo("/employee/attendance", "employee");
+    navigateTo(
+      "/employee/attendance",
+      "employee"
+    );
   };
+
+  // ========================================
+  // EMPLOYEE LOGOUT
+  // ========================================
 
   const handleEmployeeLogout = () => {
     sessionStorage.removeItem("employeeToken");
@@ -158,42 +233,75 @@ function App() {
 
     setEmployee(null);
 
-    navigateTo("/employee/login", "employee-login");
+    navigateTo(
+      "/employee/login",
+      "employee-login"
+    );
   };
 
-  // Public QR attendance route.
+  // ========================================
+  // QR CHECK-IN PAGE
+  // ========================================
+
   if (window.location.pathname === "/check-in") {
     return <CheckIn />;
   }
+
+  // ========================================
+  // ADMIN DASHBOARD
+  // ========================================
 
   if (view === "admin") {
     if (!sessionStorage.getItem("adminToken")) {
       return (
         <AdminLogin
-          onLogin={() => navigateTo("/admin", "admin")}
+          onLogin={handleAdminLogin}
+          onBack={() => navigateTo("/", "home")}
         />
       );
     }
 
-    return <AdminApp onLogout={handleAdminLogout} />;
+    return (
+      <AdminApp
+        onLogout={handleAdminLogout}
+      />
+    );
   }
+
+  // ========================================
+  // ADMIN LOGIN PAGE
+  // ========================================
 
   if (view === "admin-login") {
     return (
       <AdminLogin
-        onLogin={() => navigateTo("/admin", "admin")}
+        onLogin={handleAdminLogin}
+        onBack={() => navigateTo("/", "home")}
       />
     );
   }
+
+  // ========================================
+  // EMPLOYEE LOGIN PAGE
+  // ========================================
 
   if (view === "employee-login") {
     return (
       <EmployeeLogin
         onLogin={handleEmployeeLogin}
-        onBack={() => navigateTo("/employee/login", "employee-login")}
+        onBack={() =>
+          navigateTo(
+            "/employee/login",
+            "employee-login"
+          )
+        }
       />
     );
   }
+
+  // ========================================
+  // EMPLOYEE ATTENDANCE PAGE
+  // ========================================
 
   if (view === "employee") {
     if (
@@ -204,7 +312,10 @@ function App() {
         <EmployeeLogin
           onLogin={handleEmployeeLogin}
           onBack={() =>
-            navigateTo("/employee/login", "employee-login")
+            navigateTo(
+              "/employee/login",
+              "employee-login"
+            )
           }
         />
       );
@@ -218,17 +329,32 @@ function App() {
     );
   }
 
+  // ========================================
+  // PUBLIC HOME PAGE
+  // ========================================
+
   return (
     <PublicHome
       onAdminLogin={() =>
-        navigateTo("/admin/login", "admin-login")
+        navigateTo(
+          "/admin/login",
+          "admin-login"
+        )
       }
+
       onEmployeeLogin={() =>
-        navigateTo("/employee/login", "employee-login")
+        navigateTo(
+          "/employee/login",
+          "employee-login"
+        )
       }
-      onScanQR={() => {
-        navigateTo("/check-in", "check-in");
-      }}
+
+      onScanQR={() =>
+        navigateTo(
+          "/check-in",
+          "check-in"
+        )
+      }
     />
   );
 }
