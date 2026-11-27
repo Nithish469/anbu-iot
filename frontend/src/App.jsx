@@ -156,26 +156,34 @@ function App() {
       const path = window.location.pathname;
       const nextView = getInitialView(path);
 
+      // Protect employee attendance route
       if (
-        nextView === "employee-login" &&
-        path === "/employee/attendance"
+        path === "/employee/attendance" &&
+        nextView === "employee-login"
       ) {
         window.history.replaceState(
           {},
           "",
           "/employee/login"
         );
+
+        setView("employee-login");
+        return;
       }
 
+      // Protect admin route
       if (
-        nextView === "admin-login" &&
-        path === "/admin"
+        path === "/admin" &&
+        nextView === "admin-login"
       ) {
         window.history.replaceState(
           {},
           "",
           "/admin/login"
         );
+
+        setView("admin-login");
+        return;
       }
 
       setView(nextView);
@@ -235,7 +243,8 @@ function App() {
 
     navigateTo(
       "/employee/login",
-      "employee-login"
+      "employee-login",
+      true
     );
   };
 
@@ -292,7 +301,8 @@ function App() {
         onBack={() =>
           navigateTo(
             "/employee/login",
-            "employee-login"
+            "employee-login",
+            true
           )
         }
       />
@@ -314,7 +324,8 @@ function App() {
           onBack={() =>
             navigateTo(
               "/employee/login",
-              "employee-login"
+              "employee-login",
+              true
             )
           }
         />
@@ -345,7 +356,8 @@ function App() {
       onEmployeeLogin={() =>
         navigateTo(
           "/employee/login",
-          "employee-login"
+          "employee-login",
+          true
         )
       }
 
