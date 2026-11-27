@@ -1,0 +1,481 @@
+
+.employee-login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  box-sizing: border-box;
+  background: linear-gradient(120deg, #fff8ef, #eef5ed);
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.employee-login-card {
+  width: 100%;
+  max-width: 1100px;
+  min-height: 585px;
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  overflow: hidden;
+  background: #fffdf9;
+  border: 1px solid #e8e2d8;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(12, 48, 37, 0.10);
+}
+
+/* LEFT BRAND PANEL */
+
+.employee-brand-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 32px 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  text-align: center;
+  background: linear-gradient(145deg, #155c46, #063b2d 75%, #032e24);
+}
+
+.employee-brand-panel::before,
+.employee-brand-panel::after {
+  content: "";
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.employee-brand-panel::before {
+  top: -85px;
+  right: -55px;
+}
+
+.employee-brand-panel::after {
+  bottom: -120px;
+  left: -90px;
+}
+
+.employee-brand-top {
+  position: relative;
+  z-index: 1;
+}
+
+.employee-logo-box {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+  padding: 9px;
+  box-sizing: border-box;
+  background: #fffaf1;
+  border-radius: 17px;
+}
+
+.employee-logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.employee-brand-top h1 {
+  margin: 0;
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.employee-brand-top p {
+  margin: 7px 0 0;
+  font-size: 12px;
+  color: #e2f1e9;
+}
+
+.employee-illustration {
+  position: relative;
+  width: 190px;
+  height: 155px;
+  display: grid;
+  place-items: center;
+  margin-top: 30px;
+}
+
+.employee-avatar-box {
+  width: 116px;
+  height: 116px;
+  display: grid;
+  place-items: center;
+  color: #e2f1e9;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-radius: 25px;
+}
+
+.illustration-shield {
+  position: absolute;
+  top: 5px;
+  left: 15px;
+  width: 27px;
+  height: 27px;
+  color: #b9d8bd;
+}
+
+.illustration-fingerprint {
+  position: absolute;
+  top: 15px;
+  right: 10px;
+  width: 27px;
+  height: 27px;
+  color: #b9d8bd;
+}
+
+.illustration-check {
+  position: absolute;
+  right: 27px;
+  bottom: 8px;
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  color: #064331;
+  background: #fffaf1;
+  border-radius: 50%;
+}
+
+.employee-brand-message {
+  margin-top: 16px;
+  max-width: 340px;
+}
+
+.employee-brand-message h2 {
+  margin: 0 0 11px;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.employee-brand-message p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #d5e9df;
+}
+
+.employee-benefits {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 27px;
+}
+
+.employee-benefit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.benefit-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+}
+
+.employee-benefit span {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.employee-brand-footer {
+  position: relative;
+  margin-top: auto;
+  padding-top: 25px;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: #c6e3d6;
+}
+
+/* RIGHT FORM PANEL */
+
+.employee-form-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 50px 42px 30px;
+  box-sizing: border-box;
+  background: #fffdf9;
+}
+
+.employee-portal-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 19px;
+  color: #064b38;
+  background: #f3f2e6;
+  border: 1px solid #e7e5d3;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.employee-form-heading {
+  text-align: center;
+  margin: 25px 0 30px;
+}
+
+.employee-form-heading h2 {
+  margin: 0;
+  color: #064331;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.employee-form-heading p {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.employee-form {
+  width: 100%;
+  max-width: 410px;
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+.employee-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.employee-field label {
+  color: #174d3d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.employee-input-wrapper {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  color: #557366;
+  background: white;
+  border: 1px solid #dedfd7;
+  border-radius: 11px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.employee-input-wrapper:focus-within {
+  border-color: #17664c;
+  box-shadow: 0 0 0 3px rgba(23, 102, 76, 0.09);
+}
+
+.employee-input-wrapper input {
+  width: 100%;
+  min-width: 0;
+  padding: 13px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #173e32;
+  font-size: 12px;
+}
+
+.employee-input-wrapper input::placeholder {
+  color: #91a19a;
+}
+
+.employee-eye-button {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border: none;
+  background: transparent;
+  color: #174d3d;
+  cursor: pointer;
+}
+
+.employee-security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #537b69;
+  font-size: 10px;
+}
+
+.employee-security-note svg {
+  color: #16835b;
+}
+
+.employee-login-error {
+  padding: 10px 12px;
+  color: #b42318;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.employee-login-submit {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 2px;
+  padding: 12px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(100deg, #155c46, #063b2d);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(6, 59, 45, 0.15);
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.employee-login-submit:hover {
+  transform: translateY(-1px);
+}
+
+.employee-login-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.employee-back-home {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid #dedfd7;
+  border-radius: 11px;
+  background: white;
+  color: #174d3d;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.employee-back-home:hover {
+  background: #f5f8f4;
+}
+
+.employee-copyright {
+  margin-top: auto;
+  padding-top: 28px;
+  color: #9b9b90;
+  font-size: 9px;
+  text-align: center;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 760px) {
+  .employee-login-page {
+    padding: 16px;
+  }
+
+  .employee-login-card {
+    max-width: 480px;
+    grid-template-columns: 1fr;
+  }
+
+  .employee-brand-panel {
+    padding: 28px 22px;
+  }
+
+  .employee-illustration {
+    margin-top: 22px;
+  }
+
+  .employee-benefits {
+    margin-top: 22px;
+  }
+
+  .employee-form-panel {
+    padding: 35px 24px 28px;
+  }
+
+  .employee-form-heading h2 {
+    font-size: 27px;
+  }
+
+  .employee-copyright {
+    margin-top: 25px;
+  }
+}
+
+@media (max-width: 380px) {
+  .employee-brand-top h1 {
+    font-size: 24px;
+  }
+
+  .employee-form-panel {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+}
+
+/* ANBU IOT BRANDING FIX */
+
+.employee-brand-panel .employee-brand-top h1 {
+  color: #ffffff !important;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.employee-brand-panel .employee-brand-top p {
+  color: #e5f5ec !important;
+}
+
+.employee-brand-panel .employee-brand-message h2 {
+  color: #ffffff !important;
+  font-size: 20px;
+}
+
+.employee-brand-panel .employee-brand-message p {
+  color: #d5e9df !important;
+}
+
+.employee-brand-panel .employee-benefit span {
+  color: #ffffff !important;
+}
+
+.employee-logo-box {
+  width: 82px;
+  height: 82px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(255,255,255,0.8);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-radius: 19px;
+}
+
+.employee-logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.employee-brand-footer {
+  color: #c5f0dc !important;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+}

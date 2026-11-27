@@ -4,11 +4,11 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const employeeRoutes = require("./routes/employeeRoutes");
-const attendanceRoutes = require("./routes/attendanceRoutes");
-const qrRoutes = require("./routes/qrRoutes");
-const adminRoutes = require("./routes/adminRoutes");
-const holidayRoutes = require("./routes/holidayRoutes");
+const employeeRoutes = require("./src/routes/employeeRoutes");
+const attendanceRoutes = require("./src/routes/attendanceRoutes");
+const qrRoutes = require("./src/routes/qrRoutes");
+const adminRoutes = require("./src/routes/adminRoutes");
+const holidayRoutes = require("./src/routes/holidayRoutes");
 
 const app = express();
 

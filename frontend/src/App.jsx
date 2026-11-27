@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Sidebar from "./components/Sidebar";
 import EmployeeScan from "./pages/EmployeeScan";
@@ -26,28 +26,20 @@ function AdminApp({ onLogout }) {
     switch (page) {
       case "dashboard":
         return <Dashboard />;
-
       case "employees":
         return <Employees />;
-
       case "attendance":
         return <Attendance />;
-
       case "holidays":
         return <Holidays />;
-
       case "reports":
         return <Reports />;
-
       case "settings":
         return <Settings />;
-
       case "employee-scan":
         return <EmployeeScan />;
-
       case "employee-attendance":
         return <EmployeeAttendance />;
-
       default:
         return <Dashboard />;
     }
@@ -60,30 +52,42 @@ function AdminApp({ onLogout }) {
         setPage={setPage}
         onLogout={onLogout}
       />
-
-      <main className="main">
-        {renderPage()}
-      </main>
+      <main className="main">{renderPage()}</main>
     </div>
   );
 }
 
+// Determine the page from the current URL.
+function getInitialView(path) {
+  if (path === "/check-in") return "check-in";
+
+  if (path === "/employee/login") return "employee-login";
+
+  if (path === "/employee/attendance") {
+    return sessionStorage.getItem("employeeToken")
+      ? "employee"
+      : "employee-login";
+  }
+
+  if (path === "/admin/login") return "admin-login";
+
+  if (path === "/admin") {
+    return sessionStorage.getItem("adminToken")
+      ? "admin"
+      : "admin-login";
+  }
+
+  if (sessionStorage.getItem("adminToken")) return "admin";
+
+  if (sessionStorage.getItem("employeeToken")) return "employee";
+
+  return "home";
+}
+
 function App() {
-  const [view, setView] = useState(() => {
-    if (window.location.pathname === "/check-in") {
-      return "check-in";
-    }
-
-    if (sessionStorage.getItem("adminToken")) {
-      return "admin";
-    }
-
-    if (sessionStorage.getItem("employeeToken")) {
-      return "employee";
-    }
-
-    return "home";
-  });
+  const [view, setView] = useState(() =>
+    getInitialView(window.location.pathname)
+  );
 
   const [employee, setEmployee] = useState(() => {
     try {
@@ -95,16 +99,57 @@ function App() {
     }
   });
 
+  // Update browser URL and application view together.
+  const navigateTo = (path, nextView, replace = false) => {
+    if (window.location.pathname !== path) {
+      if (replace) {
+        window.history.replaceState({}, "", path);
+      } else {
+        window.history.pushState({}, "", path);
+      }
+    }
+
+    setView(nextView);
+  };
+
+  // Support browser Back and Forward buttons.
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const nextView = getInitialView(path);
+
+      if (
+        nextView === "employee-login" &&
+        path === "/employee/attendance"
+      ) {
+        window.history.replaceState(
+          {},
+          "",
+          "/employee/login"
+        );
+      }
+
+      setView(nextView);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   const handleAdminLogout = () => {
     sessionStorage.removeItem("adminToken");
     sessionStorage.removeItem("adminUser");
 
-    setView("home");
+    navigateTo("/", "home");
   };
 
   const handleEmployeeLogin = (employeeInfo) => {
     setEmployee(employeeInfo);
-    setView("employee");
+
+    navigateTo("/employee/attendance", "employee");
   };
 
   const handleEmployeeLogout = () => {
@@ -112,22 +157,31 @@ function App() {
     sessionStorage.removeItem("employeeUser");
 
     setEmployee(null);
-    setView("home");
+
+    navigateTo("/employee/login", "employee-login");
   };
 
-  // Keep QR attendance entry public.
+  // Public QR attendance route.
   if (window.location.pathname === "/check-in") {
     return <CheckIn />;
   }
 
   if (view === "admin") {
+    if (!sessionStorage.getItem("adminToken")) {
+      return (
+        <AdminLogin
+          onLogin={() => navigateTo("/admin", "admin")}
+        />
+      );
+    }
+
     return <AdminApp onLogout={handleAdminLogout} />;
   }
 
   if (view === "admin-login") {
     return (
       <AdminLogin
-        onLogin={() => setView("admin")}
+        onLogin={() => navigateTo("/admin", "admin")}
       />
     );
   }
@@ -136,7 +190,7 @@ function App() {
     return (
       <EmployeeLogin
         onLogin={handleEmployeeLogin}
-        onBack={() => setView("home")}
+        onBack={() => navigateTo("/employee/login", "employee-login")}
       />
     );
   }
@@ -149,7 +203,9 @@ function App() {
       return (
         <EmployeeLogin
           onLogin={handleEmployeeLogin}
-          onBack={() => setView("home")}
+          onBack={() =>
+            navigateTo("/employee/login", "employee-login")
+          }
         />
       );
     }
@@ -164,10 +220,14 @@ function App() {
 
   return (
     <PublicHome
-      onAdminLogin={() => setView("admin-login")}
-      onEmployeeLogin={() => setView("employee-login")}
+      onAdminLogin={() =>
+        navigateTo("/admin/login", "admin-login")
+      }
+      onEmployeeLogin={() =>
+        navigateTo("/employee/login", "employee-login")
+      }
       onScanQR={() => {
-        window.location.href = "/check-in";
+        navigateTo("/check-in", "check-in");
       }}
     />
   );
