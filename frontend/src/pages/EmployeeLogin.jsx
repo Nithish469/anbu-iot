@@ -206,14 +206,7 @@ function EmployeeLogin({ onLogin, onBack }) {
               {!loading && <LogIn size={18} />}
             </button>
 
-           <button
-  type="button"
-  onClick={() => {}}
-  className="employee-back-home"
->
-  <ArrowLeft size={16} />
-  Back to Home
-</button>
+           
           </form>
 
           <div className="employee-copyright">
